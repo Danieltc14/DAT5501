@@ -1,5 +1,5 @@
 import unittest
-from function import add
+from function import newadd
 
 class TestFunction(unittest.TestCase):
     def test_add(self):
