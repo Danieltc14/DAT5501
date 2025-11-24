@@ -1,0 +1,45 @@
+#importing libraries
+import pandas as pd
+import matplotlib.pyplot as plt
+
+#Loading and cleaning data
+imm = pd.read_csv("/Users/dcoker008/Downloads/non_british_percentage_by_borough_2016.csv")
+crime = pd.read_csv("/Users/dcoker008/Downloads/Crime_Rates_in_2016.csv")
+#Standardising all of the borough names
+def clean_name(x):
+    if not isinstance(x, str):
+        return ""
+    x = x.lower().strip()
+    x = x.replace("&", "and").replace("'", "")
+    for prefix in ["city of ", "royal borough of ", "london borough of ", "the "]:
+        if x.startswith(prefix):
+            x = x[len(prefix):]
+    return " ".join(x.split())
+
+imm["key"] = imm["Borough"].apply(clean_name)
+crime["key"] = crime["Borough"].apply(clean_name)
+nonbrit_col = next((c for c in imm.columns if "non" in c.lower() and "%" in c), None)
+crime_col = "Value"
+#Merging datasets
+merged = pd.merge(imm, crime, on="key", how="inner", suffixes=("_imm", "_crime"))
+merged = merged.dropna(subset=[nonbrit_col, crime_col])
+
+#Getting top 5 in crime rate and top 6 in Non-British %
+top5_crime = merged.nlargest(5, crime_col)
+top6_nonbrit = merged.nlargest(6, nonbrit_col)
+highlight = pd.concat([top5_crime, top6_nonbrit]).drop_duplicates(subset=["key"])
+
+# Plotting the data found
+plt.figure(figsize=(10,6))
+plt.scatter(merged[nonbrit_col], merged[crime_col], color="steelblue", alpha=0.7)
+
+#Chaning apppearance to make the gaph easier to read
+for _, row in highlight.iterrows():
+    plt.text(row[nonbrit_col], row[crime_col], row["Borough_crime"], color="steelblue", fontsize=9, weight="bold")
+
+plt.title("Crime Rate vs Non-British Percentage (2016)", fontsize=14)
+plt.xlabel("Non-British Population (%)")
+plt.ylabel("Crime Rate (Value)")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.show()
